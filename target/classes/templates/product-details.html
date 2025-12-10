@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${product.name} + ' - Магазин инструментов'">Детали товара</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+</head>
+<body>
+<main class="container">
+    <article class="product-details" th:object="${product}">
+        <div class="grid">
+            <div>
+                <img th:if="*{image}" th:src="*{image}" th:alt="*{name}" style="max-width: 100%; border-radius: 0.375rem;">
+                <div th:unless="*{image}" style="background: #f8f9fa; padding: 2rem; text-align: center; border-radius: 0.375rem;">
+                    <p>Изображение отсутствует</p>
+                </div>
+            </div>
+            <div>
+                <hgroup>
+                    <h1 th:text="*{name}">Название товара</h1>
+                    <p class="price" th:text="${#numbers.formatDecimal(product.price, 0, 2)} + ' ₽'">Цена</p>
+                </hgroup>
+
+                <div class="product-info">
+                    <p><strong>Категория:</strong>
+                        <span th:if="*{category != null}" th:text="*{category.name}">Категория</span>
+                        <span th:unless="*{category != null}" class="text-muted">Не указана</span>
+                    </p>
+
+                    <p><strong>На складе:</strong>
+                        <span th:text="*{stock}"></span> шт.
+                        <span th:if="*{stock == 0}" class="badge out-of-stock">Нет в наличии</span>
+                        <span th:if="*{stock > 0 && stock < 10}" class="badge low-stock">Мало</span>
+                        <span th:if="*{stock >= 10}" class="badge in-stock">В наличии</span>
+                    </p>
+                </div>
+
+                <div class="actions">
+                    <form th:action="@{/cart/add/{id}(id=${product.id})}" method="post" style="display: inline;">
+                        <input type="number" name="quantity" value="1" min="1" max="[[${product.stock}]]" style="width: 80px; margin-right: 0.5rem;">
+                        <button type="submit" class="contrast">Добавить в корзину</button>
+                    </form>
+                    <button th:if="*{stock == 0}" disabled>Нет в наличии</button>
+
+                    <a sec:authorize="hasAnyRole('ADMIN', 'MODERATOR')"
+                       th:href="@{/products/confirm-delete/{id}(id=${product.id})}"
+                       role="button"
+                       class="secondary"
+                       style="background-color: #dc3545; border-color: #dc3545; margin-left: 0.5rem;">
+                        Удалить товар
+                    </a>
+
+                    <a th:href="@{/products/all}" role="button" class="secondary">Назад к списку</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- УДАЛЕНО: раздел с отзывами -->
+
+    </article>
+</main>
+
+<footer class="container">
+    <small>© 2024 ИнструментыPRO</small>
+</footer>
+
+<style>
+    .product-details {
+        margin: 2rem 0;
+    }
+    .price {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #2c5aa0;
+    }
+    .badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        color: white;
+        font-size: 0.75rem;
+        margin-left: 0.5rem;
+    }
+    .out-of-stock { background-color: #ff6b6b; }
+    .low-stock { background-color: #ffd93d; color: #333; }
+    .in-stock { background-color: #6bcf7f; }
+    .actions {
+        margin-top: 2rem;
+    }
+    .text-muted {
+        color: #6c757d !important;
+    }
+</style>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${errorCode} + ' - ' + ${errorTitle}">Ошибка</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        .error-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 2rem 0;
+        }
+        .error-icon {
+            font-size: 4rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+<main class="container">
+    <div class="error-container">
+        <article class="text-center">
+            <hgroup>
+                <h1 th:text="${errorCode} + ' - ' + ${errorTitle}">Ошибка</h1>
+                <p th:text="${errorMessage}">Произошла ошибка</p>
+            </hgroup>
+
+            <div style="background: #f8f9fa; border-radius: 0.375rem; padding: 1rem; margin: 1rem 0;">
+                <p><strong>Время ошибки:</strong> <span th:text="${timestamp}"></span></p>
+            </div>
+
+            <div class="grid" style="justify-content: center;">
+                <div>
+                    <a th:href="@{/}" role="button" class="contrast">На главную</a>
+                </div>
+                <div>
+                    <a href="javascript:history.back()" role="button" class="secondary">Назад</a>
+                </div>
+                <div>
+                    <a th:href="@{/products/all}" role="button" class="secondary">Все товары</a>
+                </div>
+            </div>
+        </article>
+    </div>
+</main>
+</body>
+</html>

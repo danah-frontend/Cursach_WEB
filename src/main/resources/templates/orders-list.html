@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мои заказы - Магазин инструментов</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        .orders-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .order-card {
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+        .order-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .order-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: bold;
+        }
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-confirmed { background-color: #d1ecf1; color: #0c5460; }
+        .status-shipped { background-color: #d4edda; color: #155724; }
+        .status-delivered { background-color: #c3e6cb; color: #155724; }
+        .status-cancelled { background-color: #f8d7da; color: #721c24; }
+        .empty-orders {
+            text-align: center;
+            padding: 3rem 0;
+        }
+    </style>
+</head>
+<body>
+<nav class="container-fluid">
+    <ul>
+        <li><strong>ИнструментыPRO</strong></li>
+    </ul>
+    <ul>
+        <li><a th:href="@{/}">Главная</a></li>
+        <li><a th:href="@{/products/all}">Все товары</a></li>
+
+        <!-- МЕНЮ ДЛЯ АДМИНОВ И МОДЕРАТОРОВ (управление товарами) -->
+        <li sec:authorize="hasAnyRole('ADMIN', 'MODERATOR')">
+            <a th:href="@{/products/add}">Добавить товар</a>
+        </li>
+        <li sec:authorize="hasAnyRole('ADMIN', 'MODERATOR')">
+            <a th:href="@{/orders/admin}">Все заказы</a>
+        </li>
+
+        <!-- МЕНЮ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ (покупки) -->
+        <li sec:authorize="hasRole('USER')">
+            <a th:href="@{/cart}">Корзина (<span th:text="${cartItemCount}">0</span>)</a>
+        </li>
+        <li sec:authorize="hasRole('USER')">
+            <a th:href="@{/orders}">Мои заказы</a>
+        </li>
+
+        <!-- КНОПКИ ВХОДА/РЕГИСТРАЦИИ (для неавторизованных) -->
+        <li sec:authorize="!isAuthenticated()">
+            <a th:href="@{/users/login}" role="button" class="outline">Вход</a>
+        </li>
+        <li sec:authorize="!isAuthenticated()">
+            <a th:href="@{/users/register}" role="button" class="secondary">Регистрация</a>
+        </li>
+
+        <!-- ПРОФИЛЬ И ВЫХОД (для всех авторизованных) -->
+        <li sec:authorize="isAuthenticated()">
+            <a th:href="@{/users/profile}" role="button" class="outline">
+                Профиль
+            </a>
+        </li>
+        <li sec:authorize="isAuthenticated()">
+            <form th:action="@{/users/logout}" method="post" style="display: inline;">
+                <button type="submit" class="contrast small">Выйти</button>
+            </form>
+        </li>
+    </ul>
+</nav>
+
+<main class="container">
+    <div class="orders-container">
+        <h1>Мои заказы</h1>
+
+        <!-- Сообщения -->
+        <div th:if="${successMessage}" class="alert alert-success" style="background-color: #d4edda; color: #155724; padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem;">
+            <span th:text="${successMessage}"></span>
+        </div>
+
+        <div th:if="${orders.empty}" class="empty-orders">
+            <h3>У вас еще нет заказов</h3>
+            <p>Совершите свою первую покупку в нашем магазине</p>
+            <a th:href="@{/products/all}" role="button" class="primary">Перейти к товарам</a>
+        </div>
+
+        <div th:unless="${orders.empty}">
+            <div th:each="order : ${orders}" class="order-card">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h3 style="margin: 0 0 0.5rem 0;">Заказ №<span th:text="${order.id}"></span></h3>
+                        <p style="margin: 0 0 0.5rem 0; color: #6c757d;">
+                            <small>Дата: <span th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}"></span></small>
+                        </p>
+                    </div>
+
+                    <div>
+                        <span th:classappend="'order-status status-' + ${order.status.name().toLowerCase()}"
+                              class="order-status"
+                              th:text="${order.status.displayName}">
+                        </span>
+                    </div>
+                </div>
+
+                <div style="margin: 1rem 0;">
+                    <p style="margin: 0;"><strong>Адрес доставки:</strong> <span th:text="${order.address}"></span></p>
+                    <p style="margin: 0.5rem 0 0 0;"><strong>Товаров:</strong> <span th:text="${order.itemCount}"></span> шт.</p>
+                    <p style="margin: 0.5rem 0 0 0;"><strong>Итого:</strong> <span style="font-weight: bold; color: #2c5aa0;" th:text="${#numbers.formatDecimal(order.total, 0, 2)} + ' ₽'"></span></p>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                    <a th:href="@{/orders/{id}(id=${order.id})}" role="button" class="outline">Подробнее</a>
+
+                    <div th:if="${order.status.name() == 'PENDING' or order.status.name() == 'CONFIRMED'}">
+                        <form th:action="@{/orders/cancel/{id}(id=${order.id})}" method="post" style="display: inline;">
+                            <button type="submit" class="contrast" onclick="return confirm('Вы уверены, что хотите отменить заказ?')">Отменить заказ</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="container">
+    <small>© 2024 ИнструментыPRO</small>
+</footer>
+</body>
+</html>

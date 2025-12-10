@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подтверждение удаления товара - Магазин инструментов</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        .confirm-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 2rem 0;
+        }
+        .product-info {
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+<nav class="container-fluid">
+    <ul>
+        <li><strong>ИнструментыPRO</strong></li>
+    </ul>
+    <ul>
+        <li><a th:href="@{/}">Главная</a></li>
+        <li><a th:href="@{/products/all}">Все товары</a></li>
+        <li><a th:href="@{/cart}">Корзина (<span th:text="${cartItemCount}">0</span>)</a></li>
+    </ul>
+</nav>
+
+<main class="container">
+    <div class="confirm-container">
+        <h1>Подтверждение удаления товара</h1>
+
+        <!-- Сообщения -->
+        <div th:if="${errorMessage}" class="alert alert-danger" style="background-color: #f8d7da; color: #721c24; padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem;">
+            <span th:text="${errorMessage}"></span>
+        </div>
+
+        <div class="warning-box">
+            <h3 style="color: #856404; margin-top: 0;">⚠️ Внимание!</h3>
+            <p style="margin: 0;">
+                Вы собираетесь удалить товар. Это действие необратимо.
+                Товар будет удален из всех отмененных заказов, но останется в истории активных заказов.
+            </p>
+        </div>
+
+        <div th:if="${product}" class="product-info">
+            <h3 th:text="${product.name}">Название товара</h3>
+            <p><strong>Цена:</strong> <span th:text="${#numbers.formatDecimal(product.price, 0, 2)} + ' ₽'"></span></p>
+            <p><strong>Категория:</strong> <span th:text="${product.category?.name} ?: 'Не указана'"></span></p>
+            <p><strong>На складе:</strong> <span th:text="${product.stock}"></span> шт.</p>
+            <p><strong>ID товара:</strong> <span th:text="${product.id}"></span></p>
+        </div>
+
+        <div class="grid" style="margin-top: 2rem;">
+            <div>
+                <form th:action="@{/products/delete/{id}(id=${product.id})}" method="post">
+                    <button type="submit" class="contrast" style="background-color: #dc3545; border-color: #dc3545; width: 100%;">
+                        Да, удалить товар
+                    </button>
+                </form>
+            </div>
+            <div>
+                <a th:href="@{/products/all}" role="button" class="secondary" style="width: 100%; text-align: center;">
+                    Отмена
+                </a>
+            </div>
+            <div>
+                <a th:href="@{/products/product-details/{id}(id=${product.id})}" role="button" class="outline" style="width: 100%; text-align: center;">
+                    Вернуться к товару
+                </a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="container">
+    <small>© 2024 ИнструментыPRO</small>
+</footer>
+</body>
+</html>

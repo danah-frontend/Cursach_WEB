@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход - Магазин инструментов</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        .login-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 2rem 0;
+        }
+    </style>
+</head>
+<body>
+<nav class="container-fluid">
+    <ul>
+        <li><strong>ИнструментыPRO</strong></li>
+    </ul>
+    <ul>
+        <li><a th:href="@{/}">Главная</a></li>
+        <li><a th:href="@{/products/all}">Все товары</a></li>
+        <li><a th:href="@{/users/register}">Регистрация</a></li>
+    </ul>
+</nav>
+
+<main class="container">
+    <div class="login-container">
+        <h1>Вход в аккаунт</h1>
+
+        <!-- Сообщение об ошибке -->
+        <div th:if="${badCredentials}" class="alert alert-danger" style="background-color: #f8d7da; color: #721c24; padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem;">
+            Неверный email или пароль
+        </div>
+
+        <form th:action="@{/users/login}" th:method="post">
+            <label for="username">
+                Email
+                <input type="email"
+                       id="username"
+                       name="username"
+                       th:value="${username}"
+                       placeholder="example@mail.ru"
+                       required>
+            </label>
+
+            <label for="password">
+                Пароль
+                <input type="password"
+                       id="password"
+                       name="password"
+                       placeholder="Введите пароль"
+                       required>
+            </label>
+
+            <label>
+                <input type="checkbox" name="remember-me" role="switch">
+                Запомнить меня
+            </label>
+
+            <div class="grid" style="margin-top: 2rem;">
+                <button type="submit" class="primary">Войти</button>
+                <a th:href="@{/users/register}" role="button" class="secondary">Нет аккаунта? Зарегистрироваться</a>
+            </div>
+        </form>
+
+        <div style="margin-top: 2rem; text-align: center; font-size: 0.875rem; color: #6c757d;">
+            <p><strong>Тестовые аккаунты:</strong></p>
+            <p>Админ: admin@example.com / password123</p>
+            <p>Модератор: moderator@example.com / password123</p>
+            <p>Пользователь: user@example.com / password123</p>
+        </div>
+    </div>
+</main>
+
+<footer class="container">
+    <small>© 2024 ИнструментыPRO</small>
+</footer>
+</body>
+</html>

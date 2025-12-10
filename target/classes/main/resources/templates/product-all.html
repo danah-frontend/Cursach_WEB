@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Все товары - Магазин инструментов</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        .products-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: flex-start;
+        }
+        .product-card {
+            flex: 0 0 calc(33.333% - 1rem);
+            min-width: 300px;
+            box-sizing: border-box;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            transition: transform 0.2s;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        @media (max-width: 1024px) {
+            .product-card { flex: 0 0 calc(50% - 1rem); }
+        }
+        @media (max-width: 768px) {
+            .product-card { flex: 0 0 100%; }
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 2rem 0;
+            gap: 0.5rem;
+        }
+        .pagination a {
+            padding: 0.5rem 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            text-decoration: none;
+            color: #007bff;
+        }
+        .pagination a:hover { background-color: #e9ecef; }
+        .pagination .active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .pagination .disabled {
+            color: #6c757d;
+            pointer-events: none;
+            background-color: #f8f9fa;
+        }
+        .search-sort-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .search-form {
+            flex: 1;
+            min-width: 300px;
+        }
+        .sort-form {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .page-info {
+            text-align: center;
+            margin: 1rem 0;
+            color: #6c757d;
+        }
+        .actions {
+            margin-bottom: 2rem;
+        }
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            color: white;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+        .out-of-stock { background-color: #ff6b6b; }
+        .low-stock { background-color: #ffd93d; color: #333; }
+        .in-stock { background-color: #6bcf7f; }
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 0.25rem;
+            margin-bottom: 1rem;
+        }
+        .product-price {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #2c5aa0;
+            margin: 0.5rem 0;
+        }
+    </style>
+</head>
+<body>
+<!-- Исправленная навигация -->
+<nav class="container-fluid">
+    <ul>
+        <li><strong>ИнструментыPRO</strong></li>
+    </ul>
+    <ul>
+        <li><a th:href="@{/}">Главная</a></li>
+        <li><a th:href="@{/products/all}">Все товары</a></li>
+
+        <!-- МЕНЮ ДЛЯ АДМИНОВ И МОДЕРАТОРОВ (управление товарами) -->
+        <li sec:authorize="hasAnyRole('ADMIN', 'MODERATOR')">
+            <a th:href="@{/products/add}">Добавить товар</a>
+        </li>
+        <li sec:authorize="hasAnyRole('ADMIN', 'MODERATOR')">
+            <a th:href="@{/orders/admin}">Все заказы</a>
+        </li>
+
+        <!-- МЕНЮ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ (покупки) -->
+        <li sec:authorize="hasRole('USER')">
+            <a th:href="@{/cart}">Корзина (<span th:text="${cartItemCount}">0</span>)</a>
+        </li>
+        <li sec:authorize="hasRole('USER')">
+            <a th:href="@{/orders}">Мои заказы</a>
+        </li>
+
+        <!-- КНОПКИ ВХОДА/РЕГИСТРАЦИИ (для неавторизованных) -->
+        <li sec:authorize="!isAuthenticated()">
+            <a th:href="@{/users/login}" role="button" class="outline">Вход</a>
+        </li>
+        <li sec:authorize="!isAuthenticated()">
+            <a th:href="@{/users/register}" role="button" class="secondary">Регистрация</a>
+        </li>
+
+        <!-- ПРОФИЛЬ И ВЫХОД (для всех авторизованных) -->
+        <li sec:authorize="isAuthenticated()">
+            <a th:href="@{/users/profile}" role="button" class="outline">
+                Профиль
+            </a>
+        </li>
+        <li sec:authorize="isAuthenticated()">
+            <form th:action="@{/users/logout}" method="post" style="display: inline;">
+                <button type="submit" class="contrast small">Выйти</button>
+            </form>
+        </li>
+    </ul>
+</nav>
+
+<main class="container">
+    <h1>Все товары</h1>
+
+    <!-- Кнопка добавления товара -->
+    <div class="actions">
+        <a th:href="@{/products/add}" role="button" class="primary">Добавить новый товар</a>
+        <a th:href="@{/cart}" role="button" class="outline" style="margin-left: 1rem;">
+            Корзина
+            <span th:if="${cartItemCount != null and cartItemCount > 0}">
+                (<span th:text="${cartItemCount}">0</span>)
+            </span>
+        </a>
+    </div>
+
+    <!-- Поиск и сортировка -->
+    <div class="search-sort-container">
+        <!-- Форма поиска -->
+        <form th:action="@{/products/all}" method="get" class="search-form">
+            <div class="grid">
+                <input type="search"
+                       name="search"
+                       placeholder="Поиск товаров..."
+                       th:value="${searchQuery}">
+                <button type="submit">Найти</button>
+                <a th:href="@{/products/all}" role="button" class="secondary" th:if="${searchQuery}">Сбросить</a>
+            </div>
+        </form>
+
+        <!-- Сортировка через форму -->
+        <form th:action="@{/products/all}" method="get" class="sort-form">
+            <!-- Скрытые поля для сохранения состояния -->
+            <input type="hidden" name="page" th:value="0">
+            <input type="hidden" name="search" th:value="${searchQuery}">
+
+            <label for="sortBy">Сортировка:</label>
+            <select id="sortBy" name="sortBy" onchange="this.form.submit()">
+                <option value="name" th:selected="${sortBy == 'name'}">По названию</option>
+                <option value="price" th:selected="${sortBy == 'price'}">По цене</option>
+                <option value="stock" th:selected="${sortBy == 'stock'}">По количеству</option>
+            </select>
+
+            <select name="direction" onchange="this.form.submit()">
+                <option value="asc" th:selected="${direction == 'asc'}">По возрастанию</option>
+                <option value="desc" th:selected="${direction == 'desc'}">По убыванию</option>
+            </select>
+
+            <label for="pageSize">На странице:</label>
+            <select id="pageSize" name="size" onchange="this.form.submit()">
+                <option value="6" th:selected="${pageSize == 6}">6</option>
+                <option value="9" th:selected="${pageSize == 9}">9</option>
+                <option value="12" th:selected="${pageSize == 12}">12</option>
+                <option value="24" th:selected="${pageSize == 24}">24</option>
+            </select>
+        </form>
+    </div>
+
+    <!-- Информация о результате -->
+    <div class="page-info" th:if="${searchQuery}">
+        <p>Результаты поиска по запросу: "<strong th:text="${searchQuery}"></strong>"</p>
+        <p>Найдено товаров: <strong th:text="${totalItems}"></strong></p>
+    </div>
+
+    <div class="page-info" th:unless="${searchQuery}">
+        <p>Всего товаров: <strong th:text="${totalItems}"></strong></p>
+        <p>Страница <strong th:text="${currentPage + 1}"></strong> из <strong th:text="${totalPages}"></strong></p>
+    </div>
+
+    <!-- Безопасный список товаров -->
+    <div th:if="${not products.empty}" class="products-grid">
+        <article th:each="product : ${products}"
+                 class="product-card"
+                 th:if="${product != null and product.id != null}">
+
+            <div th:if="${product.image}">
+                <img th:src="${product.image}"
+                     th:alt="${product.name} ?: 'Товар'"
+                     class="product-image">
+            </div>
+            <div th:unless="${product.image}" style="background: #f8f9fa; height: 200px; display: flex; align-items: center; justify-content: center; border-radius: 0.25rem; margin-bottom: 1rem;">
+                <span>Нет фото</span>
+            </div>
+
+            <h3 th:text="${product.name} ?: 'Без названия'">Название товара</h3>
+
+            <p class="product-price" th:text="${#numbers.formatDecimal(product.price, 0, 2)} + ' ₽'"></p>
+
+            <p><strong>Категория:</strong>
+                <span th:text="${product.categoryName} ?: 'Без категории'"></span>
+            </p>
+
+            <p><strong>На складе:</strong>
+                <span th:text="${product.stock != null} ? ${product.stock} : '0'"></span> шт.
+                <span th:if="${product.stock != null and product.stock == 0}"
+                      class="badge out-of-stock">Нет в наличии</span>
+                <span th:if="${product.stock != null and product.stock > 0 and product.stock < 10}"
+                      class="badge low-stock">Мало</span>
+                <span th:if="${product.stock != null and product.stock >= 10}"
+                      class="badge in-stock">В наличии</span>
+            </p>
+
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                <!-- Ссылка на детали -->
+                <a th:href="@{/products/product-details/{id}(id=${product.id})}"
+                   role="button"
+                   class="outline"
+                   style="flex: 1; text-align: center;">
+                    Подробнее
+                </a>
+
+                <!-- Форма добавления в корзину -->
+                <form th:action="@{/cart/add-from-list/{id}(id=${product.id})}"
+                      method="post"
+                      style="flex: 1;">
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit"
+                            class="primary"
+                            style="width: 100%;"
+                            th:disabled="${product.stock == 0}">
+                        <span th:if="${product.stock > 0}">В корзину</span>
+                        <span th:if="${product.stock == 0}">Нет в наличии</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Кнопка удаления (только для админов/модераторов) -->
+            <div sec:authorize="hasAnyRole('ADMIN', 'MODERATOR')" style="margin-top: 0.5rem;">
+                <a th:href="@{/products/confirm-delete/{id}(id=${product.id})}"
+                   role="button"
+                   class="secondary"
+                   style="background-color: #dc3545; border-color: #dc3545; width: 100%; text-align: center; display: block;">
+                    Удалить товар
+                </a>
+            </div>
+        </article>
+    </div>
+
+    <!-- Пагинация -->
+    <div th:if="${totalPages > 1}" class="pagination">
+        <!-- Первая страница -->
+        <a th:if="${currentPage > 0}"
+           th:href="@{/products/all(page=0, size=${pageSize}, sortBy=${sortBy}, direction=${direction}, search=${searchQuery})}">
+            Первая
+        </a>
+        <span th:unless="${currentPage > 0}" class="disabled">Первая</span>
+
+        <!-- Предыдущая страница -->
+        <a th:if="${currentPage > 0}"
+           th:href="@{/products/all(page=${currentPage - 1}, size=${pageSize}, sortBy=${sortBy}, direction=${direction}, search=${searchQuery})}">
+            ‹ Назад
+        </a>
+        <span th:unless="${currentPage > 0}" class="disabled">‹ Назад</span>
+
+        <!-- Номера страниц -->
+        <th:block th:each="i : ${#numbers.sequence(
+            T(java.lang.Math).max(0, currentPage - 2),
+            T(java.lang.Math).min(totalPages - 1, currentPage + 2)
+        )}">
+            <a th:href="@{/products/all(page=${i}, size=${pageSize}, sortBy=${sortBy}, direction=${direction}, search=${searchQuery})}"
+               th:text="${i + 1}"
+               th:classappend="${i == currentPage} ? 'active' : ''">
+            </a>
+        </th:block>
+
+        <!-- Следующая страница -->
+        <a th:if="${currentPage < totalPages - 1}"
+           th:href="@{/products/all(page=${currentPage + 1}, size=${pageSize}, sortBy=${sortBy}, direction=${direction}, search=${searchQuery})}">
+            Вперед ›
+        </a>
+        <span th:unless="${currentPage < totalPages - 1}" class="disabled">Вперед ›</span>
+
+        <!-- Последняя страница -->
+        <a th:if="${currentPage < totalPages - 1}"
+           th:href="@{/products/all(page=${totalPages - 1}, size=${pageSize}, sortBy=${sortBy}, direction=${direction}, search=${searchQuery})}">
+            Последняя
+        </a>
+        <span th:unless="${currentPage < totalPages - 1}" class="disabled">Последняя</span>
+    </div>
+
+    <!-- Сообщение если нет товаров -->
+    <div th:if="${products.empty}" class="empty-state">
+        <article>
+            <h3>Товары не найдены</h3>
+            <p th:if="${searchQuery}">Попробуйте изменить критерии поиска</p>
+            <p th:unless="${searchQuery}">В базе данных пока нет товаров</p>
+            <a th:href="@{/products/add}" role="button" class="primary">Добавить первый товар</a>
+        </article>
+    </div>
+
+    <div class="actions">
+        <a th:href="@{/}" role="button" class="secondary">На главную</a>
+    </div>
+</main>
+</body>
+</html>

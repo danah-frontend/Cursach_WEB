@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Корзина - Магазин инструментов</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        .cart-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .cart-item {
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .cart-item-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 0.25rem;
+        }
+        .cart-item-details {
+            flex: 1;
+        }
+        .cart-item-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .quantity-input {
+            width: 70px;
+            text-align: center;
+        }
+        .cart-total {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin: 2rem 0;
+        }
+        .empty-cart {
+            text-align: center;
+            padding: 3rem 0;
+        }
+    </style>
+</head>
+<body>
+<nav class="container-fluid">
+    <ul>
+        <li><strong>ИнструментыPRO</strong></li>
+    </ul>
+    <ul>
+        <li><a th:href="@{/}">Главная</a></li>
+        <li><a th:href="@{/products/all}">Все товары</a></li>
+
+        <!-- МЕНЮ ДЛЯ АДМИНОВ И МОДЕРАТОРОВ (управление товарами) -->
+        <li sec:authorize="hasAnyRole('ADMIN', 'MODERATOR')">
+            <a th:href="@{/products/add}">Добавить товар</a>
+        </li>
+        <li sec:authorize="hasAnyRole('ADMIN', 'MODERATOR')">
+            <a th:href="@{/orders/admin}">Все заказы</a>
+        </li>
+
+        <!-- МЕНЮ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ (покупки) -->
+        <li sec:authorize="hasRole('USER')">
+            <a th:href="@{/cart}">Корзина (<span th:text="${cartItemCount}">0</span>)</a>
+        </li>
+        <li sec:authorize="hasRole('USER')">
+            <a th:href="@{/orders}">Мои заказы</a>
+        </li>
+
+        <!-- КНОПКИ ВХОДА/РЕГИСТРАЦИИ (для неавторизованных) -->
+        <li sec:authorize="!isAuthenticated()">
+            <a th:href="@{/users/login}" role="button" class="outline">Вход</a>
+        </li>
+        <li sec:authorize="!isAuthenticated()">
+            <a th:href="@{/users/register}" role="button" class="secondary">Регистрация</a>
+        </li>
+
+        <!-- ПРОФИЛЬ И ВЫХОД (для всех авторизованных) -->
+        <li sec:authorize="isAuthenticated()">
+            <a th:href="@{/users/profile}" role="button" class="outline">
+                Профиль
+            </a>
+        </li>
+        <li sec:authorize="isAuthenticated()">
+            <form th:action="@{/users/logout}" method="post" style="display: inline;">
+                <button type="submit" class="contrast small">Выйти</button>
+            </form>
+        </li>
+    </ul>
+</nav>
+
+<main class="container">
+    <div class="cart-container">
+        <h1>Корзина покупок</h1>
+
+        <!-- Сообщения -->
+        <div th:if="${successMessage}" class="alert alert-success" style="background-color: #d4edda; color: #155724; padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem;">
+            <span th:text="${successMessage}"></span>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-danger" style="background-color: #f8d7da; color: #721c24; padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem;">
+            <span th:text="${errorMessage}"></span>
+        </div>
+
+        <div th:if="${cart.items.empty}" class="empty-cart">
+            <h3>Ваша корзина пуста</h3>
+            <p>Добавьте товары из каталога, чтобы продолжить покупки</p>
+            <a th:href="@{/products/all}" role="button" class="primary">Перейти к товарам</a>
+        </div>
+
+        <div th:unless="${cart.items.empty}">
+            <!-- Список товаров -->
+            <div th:each="item : ${cart.items}" class="cart-item">
+                <div>
+                    <img th:if="${item.image}" th:src="${item.image}" th:alt="${item.productName}" class="cart-item-image">
+                    <div th:unless="${item.image}" style="width: 100px; height: 100px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; border-radius: 0.25rem;">
+                        <span>Нет фото</span>
+                    </div>
+                </div>
+
+                <div class="cart-item-details">
+                    <h3 style="margin: 0 0 0.5rem 0;" th:text="${item.productName}"></h3>
+                    <p style="margin: 0; color: #2c5aa0; font-weight: bold;" th:text="${#numbers.formatDecimal(item.price, 0, 2)} + ' ₽'"></p>
+                </div>
+
+                <div class="cart-item-actions">
+                    <form th:action="@{/cart/update/{id}(id=${item.productId})}" method="post" style="display: flex; gap: 0.5rem; align-items: center;">
+                        <input type="number" name="quantity" th:value="${item.quantity}" min="1" class="quantity-input">
+                        <button type="submit" class="secondary small">Обновить</button>
+                    </form>
+
+                    <form th:action="@{/cart/remove/{id}(id=${item.productId})}" method="post">
+                        <button type="submit" class="contrast small" style="background-color: #dc3545;">Удалить</button>
+                    </form>
+                </div>
+
+                <div style="text-align: right;">
+                    <p style="margin: 0; font-weight: bold; font-size: 1.1rem;" th:text="${#numbers.formatDecimal(item.subtotal, 0, 2)} + ' ₽'"></p>
+                </div>
+            </div>
+
+            <!-- Итоги -->
+            <div class="cart-total">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3 style="margin: 0;">Итого</h3>
+                        <p style="margin: 0.5rem 0 0 0; color: #6c757d;">Товаров: <span th:text="${cart.totalItems}"></span> шт.</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <h2 style="margin: 0; color: #2c5aa0;" th:text="${#numbers.formatDecimal(cart.total, 0, 2)} + ' ₽'"></h2>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Кнопки действий -->
+            <div style="display: flex; gap: 1rem; justify-content: space-between;">
+                <div>
+                    <a th:href="@{/products/all}" role="button" class="secondary">Продолжить покупки</a>
+                    <form th:action="@{/cart/clear}" method="post" style="display: inline;">
+                        <button type="submit" class="contrast">Очистить корзину</button>
+                    </form>
+                </div>
+                <div>
+                    <a th:href="@{/cart/checkout}" role="button" class="primary">Оформить заказ</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="container">
+    <small>© 2024 ИнструментыPRO</small>
+</footer>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль пользователя - Магазин инструментов</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        .profile-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 0;
+        }
+        .profile-card {
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .profile-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2.5rem;
+        }
+        .profile-info {
+            padding: 2rem;
+            background: white;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        .info-item {
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 0.375rem;
+            border-left: 4px solid #667eea;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+        .info-value {
+            color: #212529;
+            font-size: 1.1rem;
+        }
+        .role-badge {
+            background: #667eea;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            display: inline-block;
+            margin: 0.25rem;
+        }
+        .admin-badge { background-color: #dc3545; }
+        .moderator-badge { background-color: #ffc107; color: #000; }
+        .user-badge { background-color: #28a745; }
+    </style>
+</head>
+<body>
+<nav class="container-fluid">
+    <ul>
+        <li><strong>ИнструментыPRO</strong></li>
+    </ul>
+    <ul>
+        <li><a th:href="@{/}">Главная</a></li>
+        <li><a th:href="@{/products/all}">Все товары</a></li>
+
+        <!-- МЕНЮ ДЛЯ АДМИНОВ И МОДЕРАТОРОВ -->
+        <li sec:authorize="hasAnyRole('ADMIN', 'MODERATOR')">
+            <a th:href="@{/products/add}">Добавить товар</a>
+        </li>
+        <li sec:authorize="hasAnyRole('ADMIN', 'MODERATOR')">
+            <a th:href="@{/orders/admin}">Все заказы</a>
+        </li>
+
+        <!-- МЕНЮ ТОЛЬКО ДЛЯ ОБЫЧНЫХ ПОЛЬЗОВАТЕЛЕЙ -->
+        <li sec:authorize="hasRole('USER') and !hasAnyRole('ADMIN', 'MODERATOR')">
+            <a th:href="@{/cart}">Корзина (<span th:text="${cartItemCount}">0</span>)</a>
+        </li>
+        <li sec:authorize="hasRole('USER') and !hasAnyRole('ADMIN', 'MODERATOR')">
+            <a th:href="@{/orders}">Мои заказы</a>
+        </li>
+
+        <!-- КНОПКИ ВХОДА/РЕГИСТРАЦИИ (для неавторизованных) -->
+        <li sec:authorize="!isAuthenticated()">
+            <a th:href="@{/users/login}" role="button" class="outline">Вход</a>
+        </li>
+        <li sec:authorize="!isAuthenticated()">
+            <a th:href="@{/users/register}" role="button" class="secondary">Регистрация</a>
+        </li>
+
+        <!-- ПРОФИЛЬ И ВЫХОД -->
+        <li sec:authorize="isAuthenticated()">
+            <a th:href="@{/users/profile}" role="button" class="outline">Профиль</a>
+        </li>
+        <li sec:authorize="isAuthenticated()">
+            <form th:action="@{/users/logout}" method="post" style="display: inline;">
+                <button type="submit" class="contrast small">Выйти</button>
+            </form>
+        </li>
+    </ul>
+</nav>
+
+<main class="container">
+    <div class="profile-container">
+        <article class="profile-card" th:object="${user}">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    👤
+                </div>
+                <h1 th:text="*{name} ?: 'Пользователь'">Имя пользователя</h1>
+                <div>
+                    <span th:each="roleItem : ${#strings.arraySplit(user.role, ',')}"
+                          th:text="${roleItem}"
+                          th:class="${#strings.contains(roleItem, 'Admin')} ? 'role-badge admin-badge' :
+                                    (${#strings.contains(roleItem, 'Moderator')} ? 'role-badge moderator-badge' : 'role-badge user-badge')">
+                    </span>
+                </div>
+            </div>
+
+            <div class="profile-info">
+                <h2>Информация о профиле</h2>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Email</div>
+                        <div class="info-value" th:text="*{email}">email@example.com</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">Имя</div>
+                        <div class="info-value" th:text="*{name} ?: 'Не указано'">Имя пользователя</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">Телефон</div>
+                        <div class="info-value" th:text="*{phone} ?: 'Не указан'">+7 (XXX) XXX-XX-XX</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">Роли</div>
+                        <div class="info-value">
+                            <div th:each="roleItem : ${#strings.arraySplit(user.role, ',')}">
+                                <span th:text="${roleItem}"
+                                      th:class="${#strings.contains(roleItem, 'Admin')} ? 'role-badge admin-badge' :
+                                                (${#strings.contains(roleItem, 'Moderator')} ? 'role-badge moderator-badge' : 'role-badge user-badge')">
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <h3>Доступные действия</h3>
+                    <div class="grid" style="margin-top: 1rem; gap: 1rem;">
+                        <!-- ТОЛЬКО для обычных пользователей -->
+                        <a sec:authorize="hasRole('USER') and !hasAnyRole('ADMIN', 'MODERATOR')"
+                           th:href="@{/cart}" role="button" class="outline">Моя корзина</a>
+                        <a sec:authorize="hasRole('USER') and !hasAnyRole('ADMIN', 'MODERATOR')"
+                           th:href="@{/orders}" role="button" class="outline">Мои заказы</a>
+
+                        <!-- ТОЛЬКО для ADMIN (добавление товаров) -->
+                        <a sec:authorize="hasRole('ADMIN')"
+                           th:href="@{/products/add}"
+                           role="button" class="outline">Добавить товар</a>
+
+                        <!-- Для ADMIN и MODERATOR (управление заказами) -->
+                        <a sec:authorize="hasAnyRole('ADMIN', 'MODERATOR')"
+                           th:href="@{/orders/admin}"
+                           role="button" class="outline">Управление заказами</a>
+
+                        <!-- Для всех авторизованных -->
+                        <a th:href="@{/products/all}" role="button" class="outline">Все товары</a>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem; text-align: center;">
+                    <div class="grid" style="justify-content: center; gap: 1rem;">
+                        <a th:href="@{/}" role="button" class="secondary">На главную</a>
+                        <form th:action="@{/users/logout}" method="post" style="display: inline;">
+                            <button type="submit" class="contrast">Выйти</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </article>
+    </div>
+</main>
+
+<footer class="container">
+    <small>© 2024 ИнструментыPRO</small>
+</footer>
+</body>
+</html>

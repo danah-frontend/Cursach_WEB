@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация - Магазин инструментов</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        .register-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 2rem 0;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+<nav class="container-fluid">
+    <ul>
+        <li><strong>ИнструментыPRO</strong></li>
+    </ul>
+    <ul>
+        <li><a th:href="@{/}">Главная</a></li>
+        <li><a th:href="@{/products/all}">Все товары</a></li>
+        <li><a th:href="@{/users/login}">Вход</a></li>
+    </ul>
+</nav>
+
+<main class="container">
+    <div class="register-container">
+        <h1>Регистрация</h1>
+
+        <!-- Сообщения об ошибках -->
+        <div th:if="${errorMessage}" class="alert alert-danger" style="background-color: #f8d7da; color: #721c24; padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem;">
+            <span th:text="${errorMessage}"></span>
+        </div>
+
+        <form th:action="@{/users/register}"
+              th:method="post"
+              th:object="${userRegistrationDto}">
+
+            <div class="grid">
+                <label for="email">
+                    Email
+                    <input type="email"
+                           id="email"
+                           th:field="*{email}"
+                           placeholder="example@mail.ru"
+                           th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''"
+                           required>
+                    <small th:if="${#fields.hasErrors('email')}"
+                           th:errors="*{email}"
+                           class="error-message"></small>
+                </label>
+
+                <label for="name">
+                    Имя
+                    <input type="text"
+                           id="name"
+                           th:field="*{name}"
+                           placeholder="Ваше имя"
+                           th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
+                           required>
+                    <small th:if="${#fields.hasErrors('name')}"
+                           th:errors="*{name}"
+                           class="error-message"></small>
+                </label>
+            </div>
+
+            <div class="grid">
+                <label for="password">
+                    Пароль
+                    <input type="password"
+                           id="password"
+                           th:field="*{password}"
+                           placeholder="Минимум 6 символов"
+                           th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''"
+                           required>
+                    <small th:if="${#fields.hasErrors('password')}"
+                           th:errors="*{password}"
+                           class="error-message"></small>
+                </label>
+
+                <label for="confirmPassword">
+                    Подтверждение пароля
+                    <input type="password"
+                           id="confirmPassword"
+                           th:field="*{confirmPassword}"
+                           placeholder="Повторите пароль"
+                           th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid' : ''"
+                           required>
+                    <small th:if="${#fields.hasErrors('confirmPassword')}"
+                           th:errors="*{confirmPassword}"
+                           class="error-message"></small>
+                </label>
+            </div>
+
+            <label for="phone">
+                Телефон (необязательно)
+                <input type="tel"
+                       id="phone"
+                       th:field="*{phone}"
+                       placeholder="+7 (999) 999-99-99">
+            </label>
+
+            <div class="grid" style="margin-top: 2rem;">
+                <button type="submit" class="primary">Зарегистрироваться</button>
+                <a th:href="@{/users/login}" role="button" class="secondary">Уже есть аккаунт? Войти</a>
+            </div>
+        </form>
+    </div>
+</main>
+
+<footer class="container">
+    <small>© 2024 ИнструментыPRO</small>
+</footer>
+</body>
+</html>

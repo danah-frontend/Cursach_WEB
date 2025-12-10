@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Детали заказа - Магазин инструментов</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        .order-details-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .order-header {
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .order-item {
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .order-item-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 0.25rem;
+        }
+        .order-total {
+            background: #e9ecef;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            text-align: right;
+        }
+        .order-status {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+            font-weight: bold;
+            margin-left: 1rem;
+        }
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-confirmed { background-color: #d1ecf1; color: #0c5460; }
+        .status-shipped { background-color: #d4edda; color: #155724; }
+        .status-delivered { background-color: #c3e6cb; color: #155724; }
+        .status-cancelled { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+<nav class="container-fluid">
+    <ul>
+        <li><strong>ИнструментыPRO</strong></li>
+    </ul>
+    <ul>
+        <li><a th:href="@{/}">Главная</a></li>
+        <li><a th:href="@{/products/all}">Все товары</a></li>
+
+        <!-- МЕНЮ ДЛЯ АДМИНОВ И МОДЕРАТОРОВ (управление товарами) -->
+        <li sec:authorize="hasAnyRole('ADMIN', 'MODERATOR')">
+            <a th:href="@{/products/add}">Добавить товар</a>
+        </li>
+        <li sec:authorize="hasAnyRole('ADMIN', 'MODERATOR')">
+            <a th:href="@{/orders/admin}">Все заказы</a>
+        </li>
+
+        <!-- МЕНЮ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ (покупки) -->
+        <li sec:authorize="hasRole('USER')">
+            <a th:href="@{/cart}">Корзина (<span th:text="${cartItemCount}">0</span>)</a>
+        </li>
+        <li sec:authorize="hasRole('USER')">
+            <a th:href="@{/orders}">Мои заказы</a>
+        </li>
+
+        <!-- КНОПКИ ВХОДА/РЕГИСТРАЦИИ (для неавторизованных) -->
+        <li sec:authorize="!isAuthenticated()">
+            <a th:href="@{/users/login}" role="button" class="outline">Вход</a>
+        </li>
+        <li sec:authorize="!isAuthenticated()">
+            <a th:href="@{/users/register}" role="button" class="secondary">Регистрация</a>
+        </li>
+
+        <!-- ПРОФИЛЬ И ВЫХОД (для всех авторизованных) -->
+        <li sec:authorize="isAuthenticated()">
+            <a th:href="@{/users/profile}" role="button" class="outline">
+                Профиль
+            </a>
+        </li>
+        <li sec:authorize="isAuthenticated()">
+            <form th:action="@{/users/logout}" method="post" style="display: inline;">
+                <button type="submit" class="contrast small">Выйти</button>
+            </form>
+        </li>
+    </ul>
+</nav>
+
+<main class="container">
+    <div class="order-details-container">
+        <div style="margin-bottom: 2rem;">
+            <a th:href="@{/orders}" role="button" class="secondary">← Назад к заказам</a>
+        </div>
+
+        <h1>Детали заказа</h1>
+
+        <!-- Сообщения -->
+        <div th:if="${successMessage}" class="alert alert-success" style="background-color: #d4edda; color: #155724; padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem;">
+            <span th:text="${successMessage}"></span>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-danger" style="background-color: #f8d7da; color: #721c24; padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem;">
+            <span th:text="${errorMessage}"></span>
+        </div>
+
+        <div th:if="${order}" class="order-header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 style="margin: 0;">Заказ №<span th:text="${order.id}"></span></h2>
+                    <p style="margin: 0.5rem 0; color: #6c757d;">
+                        Дата: <span th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}"></span>
+                    </p>
+                </div>
+                <div>
+                    <span th:classappend="'order-status status-' + ${order.status.name().toLowerCase()}"
+                          class="order-status"
+                          th:text="${order.status.displayName}">
+                    </span>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <p><strong>Клиент:</strong> <span th:text="${order.user?.name ?: 'Не указано'}"></span></p>
+                <p><strong>Email:</strong> <span th:text="${order.user?.email ?: 'Не указано'}"></span></p>
+                <p><strong>Адрес доставки:</strong> <span th:text="${order.address ?: 'Не указан'}"></span></p>
+            </div>
+        </div>
+
+        <!-- Товары в заказе -->
+        <div th:if="${order?.orderItems != null and !order.orderItems.empty}">
+            <h3>Товары в заказе</h3>
+
+            <div th:each="item : ${order.orderItems}" class="order-item">
+                <div>
+                    <div th:if="${item.productId}" style="width: 100px; height: 100px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; border-radius: 0.25rem;">
+                        <span>Товар #<span th:text="${item.productId}"></span></span>
+                    </div>
+                </div>
+
+                <div style="flex: 1;">
+                    <h4 style="margin: 0 0 0.5rem 0;" th:text="${item.productName} ?: 'Товар'"></h4>
+                    <p style="margin: 0; color: #6c757d;">Артикул: <span th:text="${item.productId}"></span></p>
+                </div>
+
+                <div style="text-align: right;">
+                    <p style="margin: 0; font-weight: bold;" th:text="${item.quantity} + ' × ' + ${#numbers.formatDecimal(item.price, 0, 2)} + ' ₽'"></p>
+                    <p style="margin: 0.5rem 0 0 0; font-size: 1.1rem; color: #2c5aa0;" th:text="${#numbers.formatDecimal(item.subtotal, 0, 2)} + ' ₽'"></p>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="${order?.orderItems == null or order.orderItems.empty}" style="text-align: center; padding: 2rem;">
+            <p>В заказе нет товаров</p>
+        </div>
+
+        <!-- Итоги -->
+        <div th:if="${order}" class="order-total">
+            <h3 style="margin: 0;">Итого: <span th:text="${#numbers.formatDecimal(order.total, 0, 2)} + ' ₽'"></span></h3>
+            <p style="margin: 0.5rem 0 0 0; color: #6c757d;">
+                Товаров: <span th:text="${order.orderItems != null ? order.orderItems.size() : 0}"></span> позиций
+            </p>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div th:if="${order}" style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <a th:href="@{/orders}" role="button" class="secondary">К списку заказов</a>
+
+            <div th:if="${order.status.name() == 'PENDING' or order.status.name() == 'CONFIRMED'}">
+                <form th:action="@{/orders/cancel/{id}(id=${order.id})}" method="post" style="display: inline;">
+                    <button type="submit" class="contrast" onclick="return confirm('Вы уверены, что хотите отменить заказ?')">Отменить заказ</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Сообщение если заказ не найден -->
+        <div th:unless="${order}" class="alert alert-warning" style="background-color: #fff3cd; color: #856404; padding: 1rem; border-radius: 0.375rem; text-align: center;">
+            <h3>Заказ не найден</h3>
+            <p>Запрошенный заказ не существует или был удален</p>
+            <a th:href="@{/orders}" role="button" class="secondary">Вернуться к списку заказов</a>
+        </div>
+    </div>
+</main>
+
+<footer class="container">
+    <small>© 2024 ИнструментыPRO</small>
+</footer>
+</body>
+</html>

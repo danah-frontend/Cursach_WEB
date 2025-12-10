@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ИнструментыPRO - Главная</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        .container-fluid {
+            max-width: 100%
+        }
+        .text-center {
+            max-width: 100%
+        }
+        .featured-products {
+            margin: 2rem 0;
+        }
+        .product-card {
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: transform 0.2s;
+        }
+        .product-price {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #2c5aa0;
+        }
+    </style>
+</head>
+<body>
+<!-- Исправленная навигация -->
+<nav class="container-fluid">
+    <ul>
+        <li><strong>ИнструментыPRO</strong></li>
+    </ul>
+    <ul>
+        <li><a th:href="@{/}">Главная</a></li>
+        <li><a th:href="@{/products/all}">Все товары</a></li>
+
+        <!-- МЕНЮ ДЛЯ АДМИНОВ И МОДЕРАТОРОВ (управление товарами) -->
+        <li sec:authorize="hasAnyRole('ADMIN', 'MODERATOR')">
+            <a th:href="@{/products/add}">Добавить товар</a>
+        </li>
+        <li sec:authorize="hasAnyRole('ADMIN', 'MODERATOR')">
+            <a th:href="@{/orders/admin}">Все заказы</a>
+        </li>
+
+        <!-- МЕНЮ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ (покупки) -->
+        <li sec:authorize="hasRole('USER')">
+            <a th:href="@{/cart}">Корзина (<span th:text="${cartItemCount}">0</span>)</a>
+        </li>
+        <li sec:authorize="hasRole('USER')">
+            <a th:href="@{/orders}">Мои заказы</a>
+        </li>
+
+        <!-- КНОПКИ ВХОДА/РЕГИСТРАЦИИ (для неавторизованных) -->
+        <li sec:authorize="!isAuthenticated()">
+            <a th:href="@{/users/login}" role="button" class="outline">Вход</a>
+        </li>
+        <li sec:authorize="!isAuthenticated()">
+            <a th:href="@{/users/register}" role="button" class="secondary">Регистрация</a>
+        </li>
+
+        <!-- ПРОФИЛЬ И ВЫХОД (для всех авторизованных) -->
+        <li sec:authorize="isAuthenticated()">
+            <a th:href="@{/users/profile}" role="button" class="outline">
+                Профиль
+            </a>
+        </li>
+        <li sec:authorize="isAuthenticated()">
+            <form th:action="@{/users/logout}" method="post" style="display: inline;">
+                <button type="submit" class="contrast small">Выйти</button>
+            </form>
+        </li>
+    </ul>
+</nav>
+
+<main class="container">
+    <article class="text-center">
+        <hgroup>
+            <h1>Добро пожаловать в ИнструментыPRO!</h1>
+            <p>Лучшие инструменты для профессионалов и домашних мастеров</p>
+        </hgroup>
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+            <a th:href="@{/products/all}" role="button" class="primary">Перейти к товарам</a>
+            <a th:href="@{/cart}" role="button" class="outline">
+                Корзина
+                <span th:if="${cartItemCount != null and cartItemCount > 0}" class="cart-badge" th:text="${cartItemCount}"></span>
+            </a>
+        </div>
+    </article>
+
+    <!-- Секция с топ-3 самыми дешевыми товарами -->
+    <section class="featured-products">
+        <h2 class="section-title">Самые выгодные предложения</h2>
+        <p>Топ-3 самых дешевых товаров в нашем магазине:</p>
+
+        <div th:if="${not cheapestProducts.empty}" class="grid">
+            <div th:each="product, iterStat : ${cheapestProducts}"
+                 class="col-4 product-card"
+                 th:if="${product != null and product.id != null}">
+
+                <div style="text-align: center; margin-bottom: 0.5rem;">
+                    <span class="badge-cheap">Топ-<span th:text="${iterStat.index + 1}"></span></span>
+                </div>
+
+                <h3 style="font-size: 1.1rem;" th:text="${product.name} ?: 'Без названия'"></h3>
+
+                <div th:if="${product.image}">
+                    <img th:src="${product.image}"
+                         th:alt="${product.name} ?: 'Товар'"
+                         class="product-image">
+                </div>
+
+                <p class="product-price" th:text="${#numbers.formatDecimal(product.price, 0, 2)} + ' ₽'"></p>
+
+                <p><strong>Категория:</strong>
+                    <span th:text="${product.categoryName} ?: 'Без категории'"></span>
+                </p>
+
+                <p><strong>На складе:</strong>
+                    <span th:text="${product.stock != null} ? ${product.stock} : '0'"></span> шт.
+                    <span th:if="${product.stock != null and product.stock == 0}"
+                          style="color: #dc3545; font-size: 0.875rem;">(Нет в наличии)</span>
+                    <span th:if="${product.stock != null and product.stock > 0}"
+                          style="color: #28a745; font-size: 0.875rem;">(В наличии)</span>
+                </p>
+
+                <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                    <a th:href="@{/products/product-details/{id}(id=${product.id})}"
+                       role="button"
+                       class="outline"
+                       style="flex: 1; text-align: center;">
+                        Подробнее
+                    </a>
+
+                    <!-- Форма добавления в корзину -->
+                    <form th:action="@{/cart/add-from-list/{id}(id=${product.id})}"
+                          method="post"
+                          style="flex: 1;">
+                        <input type="hidden" name="quantity" value="1">
+                        <button type="submit"
+                                class="primary"
+                                style="width: 100%;"
+                                th:disabled="${product.stock == 0}">
+                            <span th:if="${product.stock > 0}">В корзину</span>
+                            <span th:if="${product.stock == 0}">Нет в наличии</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="${cheapestProducts.empty}" class="text-center">
+            <article>
+                <h3>Пока нет товаров</h3>
+                <p>В базе данных пока нет товаров. Будьте первым, кто добавит товар!</p>
+                <a th:href="@{/products/add}" role="button" class="primary">Добавить первый товар</a>
+            </article>
+        </div>
+    </section>
+
+</main>
+
+<footer class="container">
+    <small>
+        © 2024 ИнструментыPRO
+    </small>
+</footer>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добавление товара - Магазин инструментов</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+        }
+        .error-container {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+<main class="container">
+    <div class="form-container">
+        <h1>Добавление нового товара</h1>
+
+        <!-- Сообщение об успехе -->
+        <div th:if="${successMessage}" class="success-message">
+            <span th:text="${successMessage}">Товар успешно добавлен!</span>
+        </div>
+
+        <!-- Сообщение об ошибке -->
+        <div th:if="${errorMessage}" class="error-container">
+            <span th:text="${errorMessage}">Ошибка при добавлении товара!</span>
+        </div>
+
+        <form th:action="@{/products/add}"
+              th:method="post"
+              th:object="${addProductDto}">
+
+            <!-- Название товара -->
+            <label for="name">
+                Название товара
+                <input type="text"
+                       id="name"
+                       th:field="*{name}"
+                       placeholder="Введите название товара"
+                       th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''">
+                <small th:if="${#fields.hasErrors('name')}"
+                       th:errors="*{name}"
+                       class="error-message"></small>
+            </label>
+
+            <!-- Цена -->
+            <label for="price">
+                Цена (₽)
+                <input type="number"
+                       id="price"
+                       th:field="*{price}"
+                       step="0.01"
+                       min="0.01"
+                       placeholder="0.00"
+                       th:classappend="${#fields.hasErrors('price')} ? 'is-invalid' : ''">
+                <small th:if="${#fields.hasErrors('price')}"
+                       th:errors="*{price}"
+                       class="error-message"></small>
+            </label>
+
+            <!-- Категория -->
+            <label for="categoryId">
+                Категория
+                <select id="categoryId"
+                        th:field="*{categoryId}"
+                        th:classappend="${#fields.hasErrors('categoryId')} ? 'is-invalid' : ''">
+                    <option value="">-- Выберите категорию --</option>
+                    <option th:each="category : ${categories}"
+                            th:value="${category.id}"
+                            th:text="${category.name}">
+                    </option>
+                </select>
+                <small th:if="${#fields.hasErrors('categoryId')}"
+                       th:errors="*{categoryId}"
+                       class="error-message"></small>
+            </label>
+
+            <!-- Количество на складе -->
+            <label for="stock">
+                Количество на складе
+                <input type="number"
+                       id="stock"
+                       th:field="*{stock}"
+                       min="0"
+                       placeholder="0"
+                       th:classappend="${#fields.hasErrors('stock')} ? 'is-invalid' : ''">
+                <small th:if="${#fields.hasErrors('stock')}"
+                       th:errors="*{stock}"
+                       class="error-message"></small>
+            </label>
+
+            <!-- URL изображения -->
+            <label for="image">
+                URL изображения (необязательно)
+                <input type="url"
+                       id="image"
+                       th:field="*{image}"
+                       placeholder="https://example.com/image.jpg">
+            </label>
+
+            <!-- Описание -->
+            <label for="description">
+                Описание товара (необязательно)
+                <textarea id="description"
+                          th:field="*{description}"
+                          placeholder="Введите описание товара"
+                          rows="4"></textarea>
+            </label>
+
+            <!-- Кнопки -->
+            <div class="grid">
+                <button type="submit" class="primary">Добавить товар</button>
+                <a th:href="@{/products/all}" role="button" class="secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</main>
+</body>
+</html>
